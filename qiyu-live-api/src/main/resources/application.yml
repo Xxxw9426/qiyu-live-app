@@ -1,0 +1,9 @@
+#dubbo:
+#  application:
+#    name: qiyu-live-api
+#    qos-enable: false
+#  registry:
+#    address: nacos://113.44.144.219:8848?namespace=qiyu-live-test&username=nacos&password=nacos123
+#server:
+#  servlet:
+#    context-path: /live/api

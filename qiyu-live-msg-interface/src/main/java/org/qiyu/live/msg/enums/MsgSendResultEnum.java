@@ -1,0 +1,40 @@
+package org.qiyu.live.msg.enums;
+
+/**
+ * @Author: 萱子王
+ * @CreateTime: 2025-05-12
+ * @Description: 短信发送结果枚举类
+ * @Version: 1.0
+ */
+
+public enum MsgSendResultEnum {
+
+    SEND_SUCCESS(0,"成功"),
+    SEND_FAIL(1,"发送失败"),
+    MSG_PARAM_ERROR(2,"消息格式异常");
+
+    int code;
+    String desc;
+
+    MsgSendResultEnum(int code, String desc) {
+        this.code = code;
+        this.desc = desc;
+    }
+
+    public int getCode() {
+        return code;
+    }
+
+    public void setCode(int code) {
+        this.code = code;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
+
+    public void setDesc(String desc) {
+        this.desc = desc;
+    }
+
+}

@@ -1,0 +1,22 @@
+# bootstrap.yml是SpringCloudAlibaba框架中的一种配置文件，SpringCloudAlibaba启动时所需的配置项
+# 在这里主要配置了nacos连接的相关配置，确保可以连接到nacos读取nacos上的配置文件
+spring:
+  cloud:
+    nacos:
+      username: nacos
+      password: nacos123
+      discovery:
+        server-addr: 113.44.144.219:8848
+        namespace: qiyu-live-test
+      config:       # 配置nacos作为配置中心的一些属性
+        import-check:
+          enabled: false
+        # 当前服务启动后去nacos中读取配置文件的后缀
+        file-extension: yaml
+        # 读取配置的nacos地址
+        server-addr: 113.44.144.219:8848
+        # 读取配置的nacos的名空间
+        namespace: qiyu-live-test
+  config:
+    import:
+      - optional:nacos:qiyu-live-user-provider.yaml
