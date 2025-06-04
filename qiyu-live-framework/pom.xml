@@ -11,5 +11,6 @@
     <modules>
         <module>qiyu-live-framework-datasource-starter</module>
         <module>qiyu-live-framework-redis-starter</module>
+        <module>qiyu-live-framework-mq-starter</module>
     </modules>
 </project>

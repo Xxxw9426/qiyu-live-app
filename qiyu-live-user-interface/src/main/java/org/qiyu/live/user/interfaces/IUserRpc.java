@@ -19,7 +19,7 @@ public interface IUserRpc {
      * @param userId
      * @return
      */
-    UserDTO getByUserId(Long userId);
+    UserDTO getUserById(Long userId);
 
 
     /***

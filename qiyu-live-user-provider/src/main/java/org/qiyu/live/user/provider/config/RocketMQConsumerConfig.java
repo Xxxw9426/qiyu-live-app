@@ -1,6 +1,7 @@
 package org.qiyu.live.user.provider.config;
 
 import com.alibaba.fastjson.JSON;
+import com.qiyu.live.framework.mq.starter.properties.RocketMQConsumerProperties;
 import jakarta.annotation.Resource;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
@@ -12,7 +13,6 @@ import org.idea.qiyu.live.framework.redis.starter.key.UserProviderCacheKeyBuilde
 import org.qiyu.live.user.constants.CacheAsyncDeleteCode;
 import org.qiyu.live.user.constants.UserProviderTopicNames;
 import org.qiyu.live.user.dto.UserCacheAsyncDeleteDTO;
-import org.qiyu.live.user.dto.UserDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;

@@ -15,9 +15,15 @@ import org.springframework.context.annotation.Configuration;
 public class AccountProviderCacheKeyBuilder extends RedisKeyBuilder{
 
 
+    /** 存入Redis的当前登录用户的token值的key值  */
     private static String ACCOUNT_TOKEN_KEY ="account";
 
 
+    /***
+     * 存入Redis的当前登录用户的token值的key值
+     * @param key
+     * @return
+     */
     public String buildUserLoginTokenKey(String key) {
         return super.getPrefix()+ACCOUNT_TOKEN_KEY+super.getSplitItem()+key;
     }
