@@ -3,8 +3,9 @@ package org.qiyu.live.living.provider.service;
 import org.qiyu.live.common.interfaces.dto.PageWrapper;
 import org.qiyu.live.im.core.server.interfaces.dto.ImOfflineDTO;
 import org.qiyu.live.im.core.server.interfaces.dto.ImOnlineDTO;
-import org.qiyu.live.living.interfaces.dto.LivingRoomReqDTO;
-import org.qiyu.live.living.interfaces.dto.LivingRoomRespDTO;
+import org.qiyu.live.living.dto.LivingPkRespDTO;
+import org.qiyu.live.living.dto.LivingRoomReqDTO;
+import org.qiyu.live.living.dto.LivingRoomRespDTO;
 
 import java.util.List;
 
@@ -43,6 +44,14 @@ public interface ILivingRoomService {
 
 
     /***
+     * 根据主播id查询直播间相关信息
+     * @param anchorId
+     * @return
+     */
+    LivingRoomRespDTO queryByAnchorId(Long anchorId);
+
+
+    /***
      * 直播间列表的分页查询和展示
      * @param livingRoomReqDTO
      * @return
@@ -78,4 +87,29 @@ public interface ILivingRoomService {
      * @return
      */
     List<Long> queryUserIdByRoomId(LivingRoomReqDTO livingRoomReqDTO);
+
+
+    /***
+     * 用户请求连线pk
+     * @param livingRoomReqDTO
+     * @return
+     */
+    LivingPkRespDTO onlinePk(LivingRoomReqDTO livingRoomReqDTO);
+
+
+    /***
+     * 用户请求结束连接pk
+     * @param livingRoomReqDTO
+     * @return
+     */
+    boolean offlinePk(LivingRoomReqDTO livingRoomReqDTO);
+
+
+    /***
+     * 根据直播间id查询当前直播间中的pk者的id
+     * @param roomId
+     * @return
+     */
+    Long queryOnlinePkUserId(Integer roomId);
+
 }

@@ -4,20 +4,28 @@ import org.apache.dubbo.config.annotation.DubboReference;
 import org.qiyu.live.api.service.ILivingRoomService;
 import org.qiyu.live.api.vo.LivingRoomInitVO;
 import org.qiyu.live.api.vo.req.LivingRoomReqVO;
+import org.qiyu.live.api.vo.req.OnlinePkReqVO;
 import org.qiyu.live.api.vo.resp.LivingRoomPageRespVO;
 import org.qiyu.live.api.vo.resp.LivingRoomRespVO;
+import org.qiyu.live.api.vo.resp.RedPacketReceiveVO;
 import org.qiyu.live.common.interfaces.dto.PageWrapper;
 import org.qiyu.live.common.interfaces.utils.ConvertBeanUtils;
-import org.qiyu.live.living.interfaces.dto.LivingRoomReqDTO;
-import org.qiyu.live.living.interfaces.dto.LivingRoomRespDTO;
-import org.qiyu.live.living.interfaces.rpc.ILivingRoomRpc;
+import org.qiyu.live.gift.dto.RedPacketConfigReqDTO;
+import org.qiyu.live.gift.dto.RedPacketConfigRespDTO;
+import org.qiyu.live.gift.dto.RedPacketReceiveDTO;
+import org.qiyu.live.gift.interfaces.IRedPacketConfigRpc;
+import org.qiyu.live.im.constants.AppIdEnum;
+import org.qiyu.live.living.dto.LivingPkRespDTO;
+import org.qiyu.live.living.dto.LivingRoomReqDTO;
+import org.qiyu.live.living.dto.LivingRoomRespDTO;
+import org.qiyu.live.living.interfaces.ILivingRoomRpc;
 import org.qiyu.live.user.dto.UserDTO;
 import org.qiyu.live.user.interfaces.IUserRpc;
 import org.qiyu.live.web.starter.context.QiyuRequestContext;
+import org.qiyu.live.web.starter.error.BizBaseErrorEnum;
+import org.qiyu.live.web.starter.error.ErrorAssert;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-
-import static org.yaml.snakeyaml.nodes.NodeId.anchor;
 
 /**
 *@Author: 萱子王
@@ -35,6 +43,10 @@ public class LivingRoomServiceImpl implements ILivingRoomService {
 
     @DubboReference
     private IUserRpc userRpc;
+
+
+    @DubboReference
+    private IRedPacketConfigRpc redPacketConfigRpc;
 
 
     /***
@@ -95,12 +107,23 @@ public class LivingRoomServiceImpl implements ILivingRoomService {
         respVO.setAvatar(StringUtils.isEmpty(userDTO.getAvatar()) ? "https://s1.ax1x.com/2022/12/18/zb6q6f.png" :userDTO.getAvatar());
         if(respDTO == null || respDTO.getAnchorId()==null || userId==null) {
             respVO.setRoomId(-1);
-        } else {
-            // 传回当前直播间的信息(主播信息，直播信息等)
-            respVO.setRoomId(respDTO.getId());
-            respVO.setAnchorId(respDTO.getAnchorId());
-            respVO.setAnchor(respDTO.getAnchorId().equals(userId));
+            return respVO;
         }
+        // 判断当前用户是否是主播本人
+        boolean isAnchor = respDTO.getAnchorId().equals(userId);
+        // 如果是主播的话判断当前直播是否有配置红包雨功能
+        if(isAnchor) {
+            RedPacketConfigRespDTO configRespDTO = redPacketConfigRpc.queryByAnchorId(userId);
+            // 当前直播配置了红包雨功能
+            if(configRespDTO!=null) {
+                // 给前端返回当前直播间的红包雨配置的唯一code，这样加入该直播间的用户都可以在前端拿到该唯一code
+                respVO.setRedPacketConfigCode(configRespDTO.getConfigCode());
+            }
+        }
+        // 传回当前直播间的信息(主播信息，直播信息等)
+        respVO.setRoomId(respDTO.getId());
+        respVO.setAnchorId(respDTO.getAnchorId());
+        respVO.setAnchor(isAnchor);
         return respVO;
     }
 
@@ -119,4 +142,91 @@ public class LivingRoomServiceImpl implements ILivingRoomService {
         livingRoomPageRespVO.setHasNext(resultList.isHasNext());
         return livingRoomPageRespVO;
     }
+
+
+    /***
+     * 用户请求连线pk
+     * @param onlinePkReqVO
+     * @return
+     */
+    @Override
+    public boolean onlinePk(OnlinePkReqVO onlinePkReqVO) {
+        LivingRoomReqDTO livingRoomReqDTO = ConvertBeanUtils.convert(onlinePkReqVO, LivingRoomReqDTO.class);
+        // 设置当前用户的id
+        livingRoomReqDTO.setPkObjId(QiyuRequestContext.getUserId());
+        livingRoomReqDTO.setAppId(AppIdEnum.QIYU_LIVE_BIZ.getCode());
+        // 返回请求连线的结果
+        LivingPkRespDTO livingPkRespDTO = livingRoomRpc.onlinePk(livingRoomReqDTO);
+        return livingPkRespDTO.isOnlineStatus();
+    }
+
+
+    /***
+     * 主播请求开始初始化红包雨红包数据
+     * @param userId
+     * @param roomId
+     * @return
+     */
+    @Override
+    public Boolean prepareRedPacket(Long userId, Integer roomId) {
+        // 进行参数校验，判断当前请求用户是否是主播本人
+        LivingRoomRespDTO livingRoomRespDTO = livingRoomRpc.queryByRoomId(roomId);
+        ErrorAssert.isNotNull(livingRoomRespDTO, BizBaseErrorEnum.PARAM_ERROR);
+        ErrorAssert.isTrue(userId.equals(livingRoomRespDTO.getAnchorId()), BizBaseErrorEnum.PARAM_ERROR);
+        return redPacketConfigRpc.prepareRedPacket(userId);
+    }
+
+
+    /***
+     * 主播请求开始抢红包活动
+     *  首先判断红包数据是否已经初始化完成
+     *  然后通过im将红包雨的红包数据通知给直播间的所有用户
+     * @param userId
+     * @param code
+     * @return
+     */
+    @Override
+    public Boolean startRedPacket(Long userId, String code) {
+        // 查询当前红包活动的相关配置数据，调用rpc
+        // 首先设置当前用户和红包雨红包数据配置的唯一code
+        RedPacketConfigReqDTO reqDTO = new RedPacketConfigReqDTO();
+        reqDTO.setUserId(userId);
+        reqDTO.setRedPacketConfigCode(code);
+        // rpc调用根据主播id查询直播间id
+        LivingRoomRespDTO livingRoomRespDTO = livingRoomRpc.queryByAnchorId(userId);
+        // 判断查询结果
+        ErrorAssert.isNotNull(livingRoomRespDTO, BizBaseErrorEnum.PARAM_ERROR);
+        reqDTO.setRoomId(livingRoomRespDTO.getId());
+        // rpc调用后台抢红包功能实现方法
+        return redPacketConfigRpc.startRedPacket(reqDTO);
+    }
+
+
+    /***
+     * 用户领取红包
+     * @param userId
+     * @param code
+     * @return
+     */
+    @Override
+    public RedPacketReceiveVO getRedPacket(Long userId, String code) {
+        // 调用rpc接口领取红包
+        RedPacketConfigReqDTO reqDTO = new RedPacketConfigReqDTO();
+        reqDTO.setUserId(userId);
+        reqDTO.setRedPacketConfigCode(code);
+        RedPacketReceiveDTO receiveDTO = redPacketConfigRpc.receiveRedPacket(reqDTO);
+        // 构建返回对象
+        RedPacketReceiveVO respVO = new RedPacketReceiveVO();
+        // 如果领取红包接口返回为空，说明领取失败
+        if (receiveDTO == null) {
+            respVO.setMsg("红包已派发完毕");
+        // 领取成功
+        } else {
+            respVO.setPrice(receiveDTO.getPrice());
+            respVO.setMsg(receiveDTO.getNotifyMsg());
+        }
+        return respVO;
+    }
+
+
 }

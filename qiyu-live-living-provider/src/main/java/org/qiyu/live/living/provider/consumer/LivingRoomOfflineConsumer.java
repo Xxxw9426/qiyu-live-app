@@ -46,7 +46,7 @@ public class LivingRoomOfflineConsumer implements InitializingBean {
         defaultMQPushConsumer.setConsumeMessageBatchMaxSize(10);
         defaultMQPushConsumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
         //监听IM发送过来的业务消息topic
-        defaultMQPushConsumer.subscribe(ImCoreServerProviderTopicNames.QIYU_LIVE_IM_BIZ_MSG_TOPIC,"");
+        defaultMQPushConsumer.subscribe(ImCoreServerProviderTopicNames.IM_OFFLINE_TOPIC,"");
         defaultMQPushConsumer.setMessageListener((MessageListenerConcurrently)(msgs, context)->{
             for (MessageExt msg : msgs) {
                 // 传入service层的方法中进行处理：将当前退出直播间的用户的id从当前直播间在线用户的集合中移除

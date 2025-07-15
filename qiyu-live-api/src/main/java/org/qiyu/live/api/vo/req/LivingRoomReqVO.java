@@ -15,6 +15,10 @@ public class LivingRoomReqVO {
 
     private int pageSize;
 
+    private Integer roomId;
+
+    private String redPacketConfigCode;
+
     public Integer getType() {
         return type;
     }
@@ -39,12 +43,30 @@ public class LivingRoomReqVO {
         this.pageSize = pageSize;
     }
 
+    public Integer getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(Integer roomId) {
+        this.roomId = roomId;
+    }
+
+    public String getRedPacketConfigCode() {
+        return redPacketConfigCode;
+    }
+
+    public void setRedPacketConfigCode(String redPacketConfigCode) {
+        this.redPacketConfigCode = redPacketConfigCode;
+    }
+
     @Override
     public String toString() {
         return "LivingRoomReqVO{" +
                 "type=" + type +
                 ", page=" + page +
                 ", pageSize=" + pageSize +
+                ", roomId=" + roomId +
+                ", redPacketConfigCode='" + redPacketConfigCode + '\'' +
                 '}';
     }
 }

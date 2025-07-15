@@ -31,6 +31,10 @@ public class LivingProviderCacheKeyBuilder extends RedisKeyBuilder{
     private static String LIVING_ROOM_USER_SET = "living_room_user_set";
 
 
+    /** 存入Redis的当前pk直播的pk者的缓存的key值 */
+    private static String LIVING_ONLINE_PK = "living_online_pk";
+
+
     /** 存入Redis的当前正在直播的直播间列表的缓存的key值 */
     public String buildLivingRoomList(Integer type) {
         return super.getPrefix() + LIVING_ROOM_LIST + super.getSplitItem() + type;
@@ -52,5 +56,11 @@ public class LivingProviderCacheKeyBuilder extends RedisKeyBuilder{
     /** 存入Redis的当前直播间在线用户的set集合的key值 */
     public String buildLivingRoomUserSet(Integer roomId, Integer appId) {
         return super.getPrefix() + LIVING_ROOM_USER_SET + super.getSplitItem() + appId + super.getSplitItem() + roomId;
+    }
+
+
+    /** 存入Redis的当前pk直播的pk者的缓存的key值 */
+    public String buildLivingOnlinePk(Integer roomId) {
+        return super.getPrefix() + LIVING_ONLINE_PK + super.getSplitItem() + roomId;
     }
 }

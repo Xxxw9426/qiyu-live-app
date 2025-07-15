@@ -2,7 +2,9 @@ package org.qiyu.live.api.service;
 
 import org.qiyu.live.api.vo.LivingRoomInitVO;
 import org.qiyu.live.api.vo.req.LivingRoomReqVO;
+import org.qiyu.live.api.vo.req.OnlinePkReqVO;
 import org.qiyu.live.api.vo.resp.LivingRoomPageRespVO;
+import org.qiyu.live.api.vo.resp.RedPacketReceiveVO;
 
 /**
 *@Author: 萱子王
@@ -44,4 +46,39 @@ public interface ILivingRoomService {
      * @return
      */
     LivingRoomPageRespVO list(LivingRoomReqVO livingRoomReqVO);
+
+
+    /***
+     * 用户请求连线pk
+     * @param onlinePkReqVO
+     * @return
+     */
+    boolean onlinePk(OnlinePkReqVO onlinePkReqVO);
+
+
+    /***
+     * 主播请求开始初始化红包雨红包数据
+     * @param userId
+     * @param roomId
+     * @return
+     */
+    Boolean prepareRedPacket(Long userId, Integer roomId);
+
+
+    /***
+     * 主播请求开始抢红包活动
+     * @param userId
+     * @param code
+     * @return
+     */
+    Boolean startRedPacket(Long userId, String code);
+
+
+    /***
+     * 用户领取红包
+     * @param userId
+     * @param redPacketConfigCode
+     * @return
+     */
+    RedPacketReceiveVO getRedPacket(Long userId, String redPacketConfigCode);
 }

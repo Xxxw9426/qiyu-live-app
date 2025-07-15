@@ -1,20 +1,28 @@
 package org.qiyu.live.living.provider.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.annotation.Resource;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.idea.qiyu.live.framework.redis.starter.key.LivingProviderCacheKeyBuilder;
 import org.qiyu.live.common.interfaces.dto.PageWrapper;
 import org.qiyu.live.common.interfaces.enums.CommonStatusEnum;
 import org.qiyu.live.common.interfaces.utils.ConvertBeanUtils;
+import org.qiyu.live.im.constants.AppIdEnum;
 import org.qiyu.live.im.core.server.interfaces.dto.ImOfflineDTO;
 import org.qiyu.live.im.core.server.interfaces.dto.ImOnlineDTO;
-import org.qiyu.live.living.interfaces.dto.LivingRoomReqDTO;
-import org.qiyu.live.living.interfaces.dto.LivingRoomRespDTO;
+import org.qiyu.live.im.dto.ImMsgBody;
+import org.qiyu.live.im.router.constants.ImMsgBizCodeEnum;
+import org.qiyu.live.im.router.interfaces.ImRouterRpc;
+import org.qiyu.live.living.dto.LivingPkRespDTO;
+import org.qiyu.live.living.dto.LivingRoomReqDTO;
+import org.qiyu.live.living.dto.LivingRoomRespDTO;
 import org.qiyu.live.living.provider.dao.mapper.LivingRoomMapper;
 import org.qiyu.live.living.provider.dao.mapper.LivingRoomRecordMapper;
 import org.qiyu.live.living.provider.dao.po.LivingRoomPO;
 import org.qiyu.live.living.provider.dao.po.LivingRoomRecordPO;
 import org.qiyu.live.living.provider.service.ILivingRoomService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
@@ -22,11 +30,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @Author: 萱子王
@@ -44,6 +50,10 @@ public class LivingRoomServiceImpl implements ILivingRoomService {
 
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
+
+
+    @DubboReference
+    private ImRouterRpc imRouterRpc;
 
 
     @Resource
@@ -149,6 +159,22 @@ public class LivingRoomServiceImpl implements ILivingRoomService {
 
 
     /***
+     * 根据主播id查询直播间相关信息
+     * @param anchorId
+     * @return
+     */
+    @Override
+    public LivingRoomRespDTO queryByAnchorId(Long anchorId) {
+        LambdaQueryWrapper<LivingRoomPO> queryWrapper=new LambdaQueryWrapper<>();
+        queryWrapper.eq(LivingRoomPO::getAnchorId,anchorId);
+        queryWrapper.eq(LivingRoomPO::getStatus,CommonStatusEnum.VALID_STATUS.getCode());
+        queryWrapper.last("limit 1");
+        LivingRoomPO livingRoomPO = livingRoomMapper.selectOne(queryWrapper);
+        return ConvertBeanUtils.convert(livingRoomPO,LivingRoomRespDTO.class);
+    }
+
+
+    /***
      * 直播间列表的分页查询和展示
      * 之前的思路是直接从数据库中进行分页查询，
      * 优化后我们会将当前正在直播的直播间缓存到Redis中的一个list集合中，当我们需要查询直播间列表的时候直接从缓存的集合中通过range进行查询即可
@@ -223,6 +249,12 @@ public class LivingRoomServiceImpl implements ILivingRoomService {
         // 从Redis中的当前直播间在线用户列表的set集合中移除
         String cacheKey = livingProviderCacheKeyBuilder.buildLivingRoomUserSet(roomId, appId);
         redisTemplate.opsForSet().remove(cacheKey,userId);
+        // 监听pk主播下线行为
+        // 调用从pk直播间移除用户的方法移除当前用户
+        LivingRoomReqDTO livingRoomReqDTO=new LivingRoomReqDTO();
+        livingRoomReqDTO.setRoomId(roomId);
+        livingRoomReqDTO.setPkObjId(imOfflineDTO.getUserId());
+        this.offlinePk(livingRoomReqDTO);
     }
 
 
@@ -245,5 +277,87 @@ public class LivingRoomServiceImpl implements ILivingRoomService {
             userIdList.add(userId);
         }
         return userIdList;
+    }
+
+
+    /***
+     * 用户请求连线pk
+     * @param livingRoomReqDTO
+     * @return 返回是否请求连线成功
+     */
+    @Override
+    public LivingPkRespDTO onlinePk(LivingRoomReqDTO livingRoomReqDTO) {
+        // 首先查询当前直播间的相关信息进行前置校验
+        LivingRoomRespDTO currentLivingRoom = this.queryByRoomId(livingRoomReqDTO.getRoomId());
+        LivingPkRespDTO livingPkRespDTO=new LivingPkRespDTO();
+        livingPkRespDTO.setOnlineStatus(false);
+        // 如果当前请求连线的用户是直播间的主播
+        if(currentLivingRoom.getAnchorId().equals(livingRoomReqDTO.getPkObjId())) {
+            livingPkRespDTO.setMsg("主播不可以参与连线pk");
+            return livingPkRespDTO;
+        }
+        // 将当前连线主播进行pk的用户的id记入缓存
+        String cacheKey = livingProviderCacheKeyBuilder.buildLivingOnlinePk(livingRoomReqDTO.getRoomId());
+        // 尝试pk连线
+        boolean tryOnline = redisTemplate.opsForValue().setIfAbsent(cacheKey, livingRoomReqDTO.getPkObjId(), 30, TimeUnit.HOURS);
+        // 连线成功
+        if(tryOnline) {
+            // 使用mq通知当前直播间中的所有在线用户有pk主播连线成功
+            List<Long> userIdList = this.queryUserIdByRoomId(livingRoomReqDTO);
+            JSONObject jsonObject=new JSONObject();
+            jsonObject.put("pkObjId",livingRoomReqDTO.getPkObjId());
+            batchSendImMsg(userIdList, ImMsgBizCodeEnum.LIVING_ROOM_PK_ONLINE.getCode(),jsonObject);
+            livingPkRespDTO.setMsg("连线成功!");
+            livingPkRespDTO.setOnlineStatus(true);
+            return livingPkRespDTO;
+        }
+        // 连线失败
+        livingPkRespDTO.setMsg("当前有人正在连线，请稍后重试!");
+        return livingPkRespDTO;
+    }
+
+
+    /***
+     * 用户请求结束连接pk
+     * @param livingRoomReqDTO
+     * @return
+     */
+    @Override
+    public boolean offlinePk(LivingRoomReqDTO livingRoomReqDTO) {
+        // 从缓存中将当前连线主播进行pk的用户的id移除
+        String cacheKey = livingProviderCacheKeyBuilder.buildLivingOnlinePk(livingRoomReqDTO.getRoomId());
+        return redisTemplate.delete(cacheKey);
+    }
+
+
+    /***
+     * 根据直播间id查询当前直播间中的pk者的id
+     * @param roomId
+     * @return
+     */
+    @Override
+    public Long queryOnlinePkUserId(Integer roomId) {
+        String cacheKey = livingProviderCacheKeyBuilder.buildLivingOnlinePk(roomId);
+        Object userId = redisTemplate.opsForValue().get(cacheKey);
+        return userId!=null ? (Long) userId : null;
+    }
+
+
+    /***
+     * 批量发送im消息
+     * @param userIdList
+     * @param bizCode
+     * @param jsonObject
+     */
+    private void batchSendImMsg(List<Long> userIdList, Integer bizCode, JSONObject jsonObject) {
+        List<ImMsgBody> imMsgBodies = userIdList.stream().map(userId -> {
+            ImMsgBody imMsgBody = new ImMsgBody();
+            imMsgBody.setAppId(AppIdEnum.QIYU_LIVE_BIZ.getCode());
+            imMsgBody.setBizCode(bizCode);
+            imMsgBody.setData(jsonObject.toJSONString());
+            imMsgBody.setUserId(userId);
+            return imMsgBody;
+        }).collect(Collectors.toList());
+        imRouterRpc.batchSendMsg(imMsgBodies);
     }
 }

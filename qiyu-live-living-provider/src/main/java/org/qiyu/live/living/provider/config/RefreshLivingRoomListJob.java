@@ -2,8 +2,8 @@ package org.qiyu.live.living.provider.config;
 
 import jakarta.annotation.Resource;
 import org.idea.qiyu.live.framework.redis.starter.key.LivingProviderCacheKeyBuilder;
-import org.qiyu.live.living.interfaces.constants.LivingRoomTypeEnum;
-import org.qiyu.live.living.interfaces.dto.LivingRoomRespDTO;
+import org.qiyu.live.living.constants.LivingRoomTypeEnum;
+import org.qiyu.live.living.dto.LivingRoomRespDTO;
 import org.qiyu.live.living.provider.service.ILivingRoomService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

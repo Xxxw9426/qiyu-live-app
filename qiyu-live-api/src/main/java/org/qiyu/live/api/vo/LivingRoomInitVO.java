@@ -21,6 +21,7 @@ public class LivingRoomInitVO {
 
     private boolean isAnchor;
 
+    // 直播间红包雨的配置数据的唯一code
     private String redPacketConfigCode;
 
     private String avatar;
@@ -31,10 +32,10 @@ public class LivingRoomInitVO {
 
     private String anchorNickName;
 
-    //观众头像
+    // 观众头像
     private String watcherAvatar;
 
-    //默认背景图，为了方便讲解使用
+    // 默认背景图，为了方便讲解使用
     private String defaultBgImg;
 
     private Long pkObjId;

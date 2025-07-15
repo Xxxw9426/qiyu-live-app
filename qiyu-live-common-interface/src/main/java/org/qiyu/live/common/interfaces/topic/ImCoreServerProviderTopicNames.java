@@ -3,7 +3,7 @@ package org.qiyu.live.common.interfaces.topic;
 /**
  * @Author: 萱子王
  * @CreateTime: 2025-05-28
- * @Description: MQ消息topic常量类
+ * @Description: Im服务中MQ消息topic常量类
  * @Version: 1.0
  */
 

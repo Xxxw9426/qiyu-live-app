@@ -3,9 +3,10 @@ package org.qiyu.live.living.provider.rpc;
 import jakarta.annotation.Resource;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.qiyu.live.common.interfaces.dto.PageWrapper;
-import org.qiyu.live.living.interfaces.dto.LivingRoomReqDTO;
-import org.qiyu.live.living.interfaces.dto.LivingRoomRespDTO;
-import org.qiyu.live.living.interfaces.rpc.ILivingRoomRpc;
+import org.qiyu.live.living.dto.LivingPkRespDTO;
+import org.qiyu.live.living.dto.LivingRoomReqDTO;
+import org.qiyu.live.living.dto.LivingRoomRespDTO;
+import org.qiyu.live.living.interfaces.ILivingRoomRpc;
 import org.qiyu.live.living.provider.service.ILivingRoomService;
 
 import java.util.List;
@@ -58,6 +59,17 @@ public class LivingRoomRpcImpl implements ILivingRoomRpc {
 
 
     /***
+     * 根据主播id查询直播间相关信息
+     * @param anchorId
+     * @return
+     */
+    @Override
+    public LivingRoomRespDTO queryByAnchorId(Long anchorId) {
+        return livingRoomService.queryByAnchorId(anchorId);
+    }
+
+
+    /***
      * 直播间列表的分页查询和展示
      * @param livingRoomReqDTO
      * @return
@@ -76,5 +88,38 @@ public class LivingRoomRpcImpl implements ILivingRoomRpc {
     @Override
     public List<Long> queryUserIdByRoomId(LivingRoomReqDTO livingRoomReqDTO) {
         return livingRoomService.queryUserIdByRoomId(livingRoomReqDTO);
+    }
+
+
+    /***
+     * 用户请求连线pk
+     * @param livingRoomReqDTO
+     * @return
+     */
+    @Override
+    public LivingPkRespDTO onlinePk(LivingRoomReqDTO livingRoomReqDTO) {
+        return livingRoomService.onlinePk(livingRoomReqDTO);
+    }
+
+
+    /***
+     * 用户请求结束连接pk
+     * @param livingRoomReqDTO
+     * @return
+     */
+    @Override
+    public boolean offlinePk(LivingRoomReqDTO livingRoomReqDTO) {
+        return livingRoomService.offlinePk(livingRoomReqDTO);
+    }
+
+
+    /***
+     * 根据直播间id查询当前直播间中的pk者的id
+     * @param roomId
+     * @return
+     */
+    @Override
+    public Long queryOnlinePkUserId(Integer roomId) {
+        return livingRoomService.queryOnlinePkUserId(roomId);
     }
 }

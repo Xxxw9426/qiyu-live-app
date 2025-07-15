@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.qiyu.live.account.interfaces.IAccountTokenRpc;
+import org.qiyu.live.api.error.QiyuApiError;
 import org.qiyu.live.api.service.IUserLoginService;
 import org.qiyu.live.api.vo.UserLoginVO;
 import org.qiyu.live.common.interfaces.utils.ConvertBeanUtils;
@@ -14,6 +15,7 @@ import org.qiyu.live.msg.enums.MsgSendResultEnum;
 import org.qiyu.live.msg.interfaces.ISmsRpc;
 import org.qiyu.live.user.dto.UserLoginDTO;
 import org.qiyu.live.user.interfaces.IUserPhoneRPC;
+import org.qiyu.live.web.starter.error.ErrorAssert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -59,12 +61,8 @@ public class UserLoginServiceImpl implements IUserLoginService {
     @Override
     public WebResponseVO sendLoginCode(String phone) {
         // 校验手机号码
-        if (StringUtils.isEmpty(phone)) {
-            return WebResponseVO.errorParam("手机号不能为空");
-        }
-        if (!Pattern.matches(PHONE_REG, phone)) {
-            return WebResponseVO.errorParam("手机号格式异常");
-        }
+        ErrorAssert.isNotBlank(phone, QiyuApiError.PHONE_NOT_BLANK);
+        ErrorAssert.isTrue(Pattern.matches(PHONE_REG, phone),QiyuApiError.PHONE_IN_VALID);
         // 调用发送短信验证码的rpc接口中的方法
         MsgSendResultEnum msgSendResultEnum = smsRpc.sendLoginCode(phone);
         // 发送成功
@@ -87,16 +85,10 @@ public class UserLoginServiceImpl implements IUserLoginService {
     @Override
     public WebResponseVO login(String phone, Integer code, HttpServletResponse response) {
         // 校验手机号码的格式
-        if (StringUtils.isEmpty(phone)) {
-            return WebResponseVO.errorParam("手机号不能为空");
-        }
-        if (!Pattern.matches(PHONE_REG, phone)) {
-            return WebResponseVO.errorParam("手机号格式异常");
-        }
+        ErrorAssert.isNotBlank(phone, QiyuApiError.PHONE_NOT_BLANK);
+        ErrorAssert.isTrue(Pattern.matches(PHONE_REG, phone),QiyuApiError.PHONE_IN_VALID);
         // 校验验证码的格式
-        if (code == null || code < 1000) {
-            return WebResponseVO.errorParam("验证码格式异常");
-        }
+        ErrorAssert.isTrue(code != null && code >= 1000,QiyuApiError.LOGIN_CODE_IN_VALID);
         // 调用校验短信验证码的rpc接口中的方法
         MsgCheckDTO msgCheckDTO = smsRpc.checkLoginCode(phone, code);
         // 校验短信验证码失败

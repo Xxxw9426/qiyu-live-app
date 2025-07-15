@@ -1,7 +1,6 @@
 package org.qiyu.live.msg.provider.consumer;
 
 import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
 import com.qiyu.live.framework.mq.starter.properties.RocketMQConsumerProperties;
 import jakarta.annotation.Resource;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
@@ -12,7 +11,6 @@ import org.apache.rocketmq.common.message.MessageExt;
 import org.qiyu.live.common.interfaces.topic.ImCoreServerProviderTopicNames;
 import org.qiyu.live.im.dto.ImMsgBody;
 import org.qiyu.live.msg.provider.consumer.handler.MessageHandler;
-import org.qiyu.live.msg.provider.consumer.handler.impl.SingleMessageHandlerImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
