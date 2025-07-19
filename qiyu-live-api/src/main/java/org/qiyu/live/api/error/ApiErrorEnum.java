@@ -19,6 +19,7 @@ public enum ApiErrorEnum implements QiyuBaseError {
     SEND_GIFT_ERROR(10006,"送礼失败"),
     PK_ONLINE_BUSY(10007,"目前正有人连线，请稍后再试"),
     NOT_SEND_TO_YOURSELF(10008, "不能给自己送礼"),
+    PRICE_NOT_ENOUGH(10009,"支付异常")
     ;
 
     int code;

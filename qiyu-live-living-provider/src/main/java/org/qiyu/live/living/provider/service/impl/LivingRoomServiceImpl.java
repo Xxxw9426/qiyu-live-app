@@ -1,12 +1,17 @@
 package org.qiyu.live.living.provider.service.impl;
 
+import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.annotation.Resource;
+import org.apache.rocketmq.client.producer.MQProducer;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.common.message.Message;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.idea.qiyu.live.framework.redis.starter.key.LivingProviderCacheKeyBuilder;
 import org.qiyu.live.common.interfaces.dto.PageWrapper;
 import org.qiyu.live.common.interfaces.enums.CommonStatusEnum;
+import org.qiyu.live.common.interfaces.topic.LivingRoomTopicNames;
 import org.qiyu.live.common.interfaces.utils.ConvertBeanUtils;
 import org.qiyu.live.im.constants.AppIdEnum;
 import org.qiyu.live.im.core.server.interfaces.dto.ImOfflineDTO;
@@ -22,13 +27,14 @@ import org.qiyu.live.living.provider.dao.mapper.LivingRoomRecordMapper;
 import org.qiyu.live.living.provider.dao.po.LivingRoomPO;
 import org.qiyu.live.living.provider.dao.po.LivingRoomRecordPO;
 import org.qiyu.live.living.provider.service.ILivingRoomService;
-import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -44,16 +50,23 @@ import java.util.stream.Collectors;
 public class LivingRoomServiceImpl implements ILivingRoomService {
 
 
+    private static final Logger logger= LoggerFactory.getLogger(LivingRoomServiceImpl.class);
+
+
+    @Resource
+    private MQProducer mqProducer;
+
+
+    @DubboReference
+    private ImRouterRpc imRouterRpc;
+
+
     @Resource
     private LivingRoomMapper livingRoomMapper;
 
 
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
-
-
-    @DubboReference
-    private ImRouterRpc imRouterRpc;
 
 
     @Resource
@@ -81,7 +94,26 @@ public class LivingRoomServiceImpl implements ILivingRoomService {
         // 防止之前有空值缓存，这里做移除操作
         String cacheKey=livingProviderCacheKeyBuilder.buildLivingRoomObj(livingRoomPO.getId());
         redisTemplate.delete(cacheKey);
+        // 发送开播的MQ消息异步的加载商品的库存的缓存到Redis中
+        this.sendStartingLivingRoomMq(livingRoomPO);
         return livingRoomPO.getId();
+    }
+
+
+    /***
+     * 发送开播的MQ消息，然后异步的加载商品的库存的缓存到Redis中
+     * @param livingRoomPO
+     */
+    private void sendStartingLivingRoomMq(LivingRoomPO livingRoomPO){
+        Message message=new Message();
+        message.setBody(JSON.toJSONBytes(livingRoomPO));
+        message.setTopic(LivingRoomTopicNames.START_LIVING_ROOM);
+        try {
+            SendResult sendResult = mqProducer.send(message);
+            logger.info("[ILivingRoomServiceImpl] sendStartingLivingRoomMq sendResult is {}",sendResult);;
+        } catch (Exception e) {
+            logger.error("[ILivingRoomServiceImpl] sendStartingLivingRoomMq has exception:",e);
+        }
     }
 
 

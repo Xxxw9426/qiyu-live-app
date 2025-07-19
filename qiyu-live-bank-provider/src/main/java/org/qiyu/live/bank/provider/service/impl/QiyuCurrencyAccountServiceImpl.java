@@ -101,23 +101,25 @@ public class QiyuCurrencyAccountServiceImpl implements IQiyuCurrencyAccountServi
      * @param num  减少的金额
      */
     @Override
-    public void decr(long userId, int num) {
+    public boolean decr(long userId, int num) {
         // 先在Redis中做扣减，然后再在DB中进行异步更新
         String cacheKey = bankProviderCacheKeyBuilder.buildUserBalance(userId);
         // 如果缓存没有过期的话先给缓存扣减
         if(redisTemplate.hasKey(cacheKey)){
             // 基于Redis的扣减操作
-            redisTemplate.opsForValue().decrement(cacheKey,num);
+            Long result = redisTemplate.opsForValue().decrement(cacheKey, num);
             redisTemplate.expire(cacheKey,5,TimeUnit.MINUTES);
+            // 异步的从DB中扣减用户余额并且做流水记录
+            threadPoolExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    // 开启一个线程异步的对DB进行操作
+                    consumeDecrDBHandler(userId,num);
+                }
+            });
+            return result > 0;
         }
-        // 异步的从DB中扣减用户余额并且做流水记录
-        threadPoolExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                // 开启一个线程异步的对DB进行操作
-                consumeDecrDBHandler(userId,num);
-            }
-        });
+        return false;
     }
 
 

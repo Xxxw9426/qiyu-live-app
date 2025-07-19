@@ -34,7 +34,7 @@ public interface IQiyuCurrencyAccountService {
      * @param userId
      * @param num  减少的金额
      */
-    void decr(long userId,int num);
+    boolean decr(long userId,int num);
 
 
     /***

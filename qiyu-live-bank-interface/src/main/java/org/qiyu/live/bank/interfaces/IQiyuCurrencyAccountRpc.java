@@ -31,6 +31,15 @@ public interface IQiyuCurrencyAccountRpc {
 
 
     /***
+     * 减少余额方法版本2
+     * @param userId
+     * @param num
+     * @return
+     */
+    boolean decrV2(long userId,int num);
+
+
+    /***
      * 查询账户余额
      * @param userId
      * @return

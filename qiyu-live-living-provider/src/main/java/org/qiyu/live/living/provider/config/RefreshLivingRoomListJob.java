@@ -47,7 +47,7 @@ public class RefreshLivingRoomListJob implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        //一秒钟刷新一次直播间列表数据
+        // 每一秒钟刷新一次直播间列表数据
         SCHEDULED_THREAD_POOL_EXECUTOR.scheduleWithFixedDelay(new RefreshCacheListJob(), 3000, 1000, TimeUnit.MILLISECONDS);
     }
 

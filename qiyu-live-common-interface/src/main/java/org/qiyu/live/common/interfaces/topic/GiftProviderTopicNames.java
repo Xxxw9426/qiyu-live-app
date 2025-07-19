@@ -22,4 +22,10 @@ public class GiftProviderTopicNames {
     public static final String RECEIVE_RED_PACKET = "receive_red_packet";
 
 
+    /**
+     * 回滚未支付订单库存的topic
+     */
+    public static final String ROLL_BACK_STOCK = "rollback-stock";
+
+
 }

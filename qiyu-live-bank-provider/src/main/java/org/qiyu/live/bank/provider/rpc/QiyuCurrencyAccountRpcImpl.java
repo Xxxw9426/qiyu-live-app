@@ -4,7 +4,6 @@ import jakarta.annotation.Resource;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.qiyu.live.bank.dto.AccountTradeReqDTO;
 import org.qiyu.live.bank.dto.AccountTradeRespDTO;
-import org.qiyu.live.bank.dto.QiyuCurrencyAccountDTO;
 import org.qiyu.live.bank.interfaces.IQiyuCurrencyAccountRpc;
 import org.qiyu.live.bank.provider.service.IQiyuCurrencyAccountService;
 
@@ -41,6 +40,22 @@ public class QiyuCurrencyAccountRpcImpl implements IQiyuCurrencyAccountRpc {
     @Override
     public void decr(long userId, int num) {
         qiyuCurrencyAccountService.decr(userId, num);
+    }
+
+
+    /***
+     * 减少余额方法版本2
+     * @param userId
+     * @param num
+     * @return
+     */
+    @Override
+    public boolean decrV2(long userId, int num) {
+        Integer price = qiyuCurrencyAccountService.getBalance(userId);
+        if(price-num<0) {
+            return false;
+        }
+        return qiyuCurrencyAccountService.decr(userId, num);
     }
 
 

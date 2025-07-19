@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Configuration;
  * @Description: 礼物服务模块Redis中key值的生成器
  * @Version: 1.0
  */
-
 @Configuration
 @Conditional(RedisKeyLoadMatch.class)
 public class GiftProviderCacheKeyBuilder extends RedisKeyBuilder{
@@ -71,6 +70,30 @@ public class GiftProviderCacheKeyBuilder extends RedisKeyBuilder{
     private static String RED_PACKET_NOTIFY = "red_packet_notify";
 
 
+    /** 向Redis中存储商品详情信息配置的缓存的key值 */
+    private static String SKU_DETAIL= "sku_detail";
+
+
+    /** 向Redis中存储用户在当前直播间中的购物车基本信息的缓存的key值 */
+    private static String SHOP_CAR = "shop_car";
+
+
+    /** 向Redis中存储当前直播间中的秒杀商品的库存信息的缓存的key值 */
+    private static String SKU_STOCK = "sku_stock";
+
+
+    /** 操作从Redis中更新商品缓存到MySQL中时防止多线程环境下数据错乱加入的锁的key值 */
+    private static String STOCK_SYNC_LOCK = "stock_sync_lock";
+
+
+    /** 向Redis中存储商品订单信息的缓存的key值(以userId和roomId为维度) */
+    private static String SKU_ORDER = "sku_order";
+
+
+    /** 向Redis中存储商品订单信息的缓存的key值(以orderId为维度) */
+    private static String SKU_ORDER_INFO = "sku_order_info";
+
+
     /** 存入Redis的送礼服务中mq消息消费记录的key值 */
     public String buildGiftConsumeKey(String uuid) {
         return super.getPrefix() + GIFT_CONSUME_KEY + super.getSplitItem() + uuid;
@@ -121,19 +144,19 @@ public class GiftProviderCacheKeyBuilder extends RedisKeyBuilder{
 
     /** 向Redis中存储的抢红包过程中记录当前总共分发了多少红包数量的缓存的key值 */
     public String buildRedPacketTotalGetCount(String code) {
-        return super.getPrefix() + RED_PACKET_TOTAL_GET_COUNT + super.getSplitItem() + (Math.abs(code.hashCode()) % 100);
+        return super.getPrefix() + RED_PACKET_TOTAL_GET_COUNT + super.getSplitItem() + code;
     }
 
 
     /** 向Redis中存储的抢红包过程中记录当前总共分发了多少红包金额的缓存的key值 */
     public String buildRedPacketTotalGetPrice(String code) {
-        return super.getPrefix() + RED_PACKET_TOTAL_GET_PRICE + super.getSplitItem() + (Math.abs(code.hashCode()) % 100);
+        return super.getPrefix() + RED_PACKET_TOTAL_GET_PRICE + super.getSplitItem() + code;
     }
 
 
     /** 向Redis中存储的抢红包过程中记录当前分发的最大红包金额的缓存的key值 */
     public String buildRedPacketMaxGetPrice(String code) {
-        return super.getPrefix() + RED_PACKET_MAX_GET_PRICE + super.getSplitItem() + (Math.abs(code.hashCode()) % 100);
+        return super.getPrefix() + RED_PACKET_MAX_GET_PRICE + super.getSplitItem() + code;
     }
 
 
@@ -152,6 +175,42 @@ public class GiftProviderCacheKeyBuilder extends RedisKeyBuilder{
     /** 向Redis中存储的开始抢红包活动后的广播行为完成的标志的缓存的key值 */
     public String buildRedPacketNotify(String code) {
         return super.getPrefix() + RED_PACKET_NOTIFY + super.getSplitItem() + code;
+    }
+
+
+    /** 向Redis中存储商品详情信息配置的缓存的key值 */
+    public String buildSkuDetail(Long skuId) {
+        return super.getPrefix() + SKU_DETAIL + super.getSplitItem() + skuId;
+    }
+
+
+    /** 向Redis中存储用户在当前直播间中的购物车基本信息的缓存的key值 */
+    public String buildUserShopCar(Long userId, Integer roomId) {
+        return super.getPrefix() + SHOP_CAR + super.getSplitItem() + userId + super.getSplitItem() + roomId;
+    }
+
+
+    /** 向Redis中存储当前直播间中的秒杀商品的库存信息的缓存的key值 */
+    public String buildSkuStock(Long skuId) {
+        return super.getPrefix() + SKU_STOCK + super.getSplitItem() + skuId;
+    }
+
+
+    /** 操作从Redis中更新商品缓存到MySQL中时防止多线程环境下数据错乱加入的锁的key值 */
+    public String buildStockSyncLock() {
+        return super.getPrefix() + STOCK_SYNC_LOCK;
+    }
+
+
+    /** 向Redis中存储商品订单信息的缓存的key值 */
+    public String buildSkuOrder(Long userId,Integer roomId) {
+        return super.getPrefix() + SKU_ORDER + super.getSplitItem() + userId + super.getSplitItem() + roomId;
+    }
+
+
+    /** 向Redis中存储商品订单信息的缓存的key值(以orderId为维度) */
+    public String buildSkuOrderInfo(Long orderId) {
+        return super.getPrefix() + SKU_ORDER_INFO + super.getSplitItem() + orderId;
     }
 
 }
